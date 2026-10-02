@@ -1,48 +1,297 @@
 <!doctype html>
 <html lang="ru">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>RF Measurement Analyzer</title><link rel="stylesheet" href="/static/style.css"><script src="/static/app.js" defer></script></head>
-<body>
-<aside class="sidebar">
-  <a class="brand" href="/" aria-label="RF Measurement Analyzer"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M3 21h7l4-13 8 25 5-12h10" fill="none" stroke="currentColor" stroke-width="2.5"/></svg><span>RF<span class="brand-small">MEASUREMENT ANALYZER</span></span></a>
-  <div class="side-section"><div class="eyebrow">01 / ДАННЫЕ</div><h2>Два файла. Одна проверка.</h2><p class="side-copy">Сравни S-параметры и найди, где устройство выходит за требования.</p>
-    <div class="file-slot" id="slot-a"><div class="slot-heading"><span class="series-dot a"></span><strong>Образец A</strong><span class="letter">A</span></div><div class="file-name" id="name-a">Загрузка…</div><div class="file-detail" id="detail-a">—</div><label class="upload-label">Загрузить .s2p<input type="file" id="file-a" accept=".s2p" aria-label="Загрузить образец A"></label></div>
-    <div class="file-slot" id="slot-b"><div class="slot-heading"><span class="series-dot b"></span><strong>Образец B</strong><button id="remove-b" class="text-button" title="Убрать файл B" aria-label="Убрать файл B">×</button></div><div class="file-name" id="name-b">Загрузка…</div><div class="file-detail" id="detail-b">—</div><label class="upload-label">Загрузить .s2p<input type="file" id="file-b" accept=".s2p" aria-label="Загрузить образец B"></label></div>
-    <button class="demo-button" id="demo">↻ Вернуть демо-фильтры</button>
-    <div class="demo-downloads"><a href="/api/examples/nominal">Скачать A .s2p</a><a href="/api/examples/degraded">Скачать B .s2p</a></div>
-    <p class="support-note">Touchstone 1.0 · RI / MA / DB<br>До 2 МиБ / 20 000 точек. Файлы хранятся в памяти локального сервера.</p>
-  </div>
-  <div class="side-section"><div class="eyebrow">02 / ТРЕБОВАНИЯ</div><h2>Проверка фильтра</h2>
-    <form id="requirements">
-      <div class="field-label">Полоса пропускания, ГГц</div><div class="field-pair"><label><span>От</span><input name="pass_start_ghz" type="number" step="any" min="0.000001" required></label><label><span>До</span><input name="pass_end_ghz" type="number" step="any" min="0.000001" required></label></div>
-      <label class="field full"><span>Макс. потери, дБ</span><input name="max_loss_db" type="number" step="any" min="0" max="100" required></label>
-      <label class="field full"><span>Мин. возвратные потери, дБ</span><input name="min_return_loss_db" type="number" step="any" min="0" max="100" required></label>
-      <div class="field-label">Подавление ниже полосы, ГГц</div><div class="field-pair"><label><span>От</span><input name="low_stop_start_ghz" type="number" step="any" min="0.000001" required></label><label><span>До</span><input name="low_stop_end_ghz" type="number" step="any" min="0.000001" required></label></div>
-      <div class="field-label">Подавление выше полосы, ГГц</div><div class="field-pair"><label><span>От</span><input name="high_stop_start_ghz" type="number" step="any" min="0.000001" required></label><label><span>До</span><input name="high_stop_end_ghz" type="number" step="any" min="0.000001" required></label></div>
-      <label class="field full"><span>Мин. подавление, дБ</span><input name="min_attenuation_db" type="number" step="any" min="0" max="150" required></label>
-      <button class="apply" type="submit" id="apply">Проверить требования <span>→</span></button>
-      <p id="dirty-note" class="dirty-note" hidden>Изменения ещё не применены.</p>
-    </form>
-  </div>
-  <div class="sidebar-footer"><span class="status-dot"></span><span id="connection">Подключение к анализатору…</span></div>
-</aside>
-<main>
-  <header class="page-header"><div><div class="eyebrow">NETWORK CHARACTERIZATION / TWO-PORT</div><h1>От измерений<br>к заключению.</h1><p>Передача, согласование и допуски — в одном окне.</p></div><button class="export-button" id="export" disabled>↓ HTML-отчёт</button></header>
-  <div class="source-notice" id="source-notice"><span class="source-icon">◈</span><div><strong>Синтетические данные · модель LC-фильтра</strong><span>Файлы рассчитаны из электрической цепи. Это не измерения реального прибора.</span></div><span class="notice-tag">DEMO LAB</span></div>
-  <div class="error-box" id="error" role="alert" hidden></div>
-  <section class="comparison-strip" id="comparison" aria-label="Результаты образцов"></section>
-  <section class="chart-panel">
-    <div class="chart-top"><div><div class="eyebrow">ЧАСТОТНЫЙ ОТКЛИК</div><h2 id="chart-title">Передача S21</h2></div><div class="plot-legend" id="legend"></div></div>
-    <div class="chart-tabs" role="group" aria-label="Тип графика"><button data-view="transmission" class="active">Передача S21</button><button data-view="return">Согласование</button><button data-view="all">Все S-параметры</button><button data-view="delay">Групповая задержка</button></div>
-    <div class="chart-wrap"><svg id="chart" viewBox="0 0 1000 385" role="img" aria-label="График S-параметров"></svg><div id="tooltip" class="tooltip" hidden></div></div>
-    <div class="chart-footer"><span><i class="band-key"></i>Заданная полоса пропускания</span><span id="plot-note">—</span></div>
-  </section>
-  <section class="metrics" id="metrics" aria-label="Характеристики выбранного образца"></section>
-  <section class="results-panel"><div class="section-heading"><div><div class="eyebrow">ПРОВЕРКА ПО ТОЧКАМ</div><h2>Соответствие требованиям</h2></div><div id="selected-name" class="mono"></div></div>
-    <div class="table-scroll"><table><thead><tr><th>Требование</th><th>Допуск</th><th>Худший результат</th><th>Запас</th><th>Статус</th></tr></thead><tbody id="checks"></tbody></table></div>
-    <div class="verdict-explanation" id="explanation"></div>
-  </section>
-  <div class="bottom-grid"><section class="method-panel"><div class="eyebrow">КАК ЧИТАТЬ РЕЗУЛЬТАТ</div><h2>Отрицательный запас = нарушение</h2><p>Потери — это −S21 в дБ. Возвратные потери проверяются на обоих портах: чем больше, тем лучше согласование. Подавление — ослабление S21 вне рабочей полосы.</p><p>Проверяются исходные точки и интерполированные границы полос. Между точками узкий дефект может остаться незамеченным. Для каждой полосы нужны полное покрытие и минимум три исходные точки.</p><p>Полоса −3 дБ отсчитывается от пика S21; групповая задержка — из производной развёрнутой фазы. Ниже −60 дБ задержка скрыта.</p></section>
-    <section class="evidence-panel"><div class="eyebrow">ДАННЫЕ И ПРОИСХОЖДЕНИЕ</div><h2>Можно проверить и повторить</h2><div id="evidence"></div><div id="warnings"></div></section></div>
-  <footer class="page-footer"><span>RF Measurement Analyzer <b>/</b> Local engineering lab</span><span>Без калибровки и оценки неопределённости</span></footer>
-</main>
-</body></html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RF Measurement Analyzer</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <script src="/static/app.js" defer></script>
+  </head>
+  <body>
+    <aside class="sidebar">
+      <a class="brand" href="/" aria-label="RF Measurement Analyzer"
+        ><svg viewBox="0 0 40 40" aria-hidden="true">
+          <path
+            d="M3 21h7l4-13 8 25 5-12h10"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+          /></svg
+        ><span>RF<span class="brand-small">MEASUREMENT ANALYZER</span></span></a
+      >
+      <div class="side-section">
+        <div class="eyebrow">01 / ДАННЫЕ</div>
+        <h2>Два файла. Одна проверка.</h2>
+        <p class="side-copy">
+          Сравни S-параметры и найди, где устройство выходит за требования.
+        </p>
+        <div class="file-slot" id="slot-a">
+          <div class="slot-heading">
+            <span class="series-dot a"></span><strong>Образец A</strong
+            ><span class="letter">A</span>
+          </div>
+          <div class="file-name" id="name-a">Загрузка…</div>
+          <div class="file-detail" id="detail-a">—</div>
+          <label class="upload-label"
+            >Загрузить .s2p<input
+              type="file"
+              id="file-a"
+              accept=".s2p"
+              aria-label="Загрузить образец A"
+          /></label>
+        </div>
+        <div class="file-slot" id="slot-b">
+          <div class="slot-heading">
+            <span class="series-dot b"></span><strong>Образец B</strong
+            ><button
+              id="remove-b"
+              class="text-button"
+              title="Убрать файл B"
+              aria-label="Убрать файл B"
+            >
+              ×
+            </button>
+          </div>
+          <div class="file-name" id="name-b">Загрузка…</div>
+          <div class="file-detail" id="detail-b">—</div>
+          <label class="upload-label"
+            >Загрузить .s2p<input
+              type="file"
+              id="file-b"
+              accept=".s2p"
+              aria-label="Загрузить образец B"
+          /></label>
+        </div>
+        <button class="demo-button" id="demo">↻ Вернуть демо-фильтры</button>
+        <div class="demo-downloads">
+          <a href="/api/examples/nominal">Скачать A .s2p</a
+          ><a href="/api/examples/degraded">Скачать B .s2p</a>
+        </div>
+        <p class="support-note">
+          Touchstone 1.0 · RI / MA / DB<br />До 2 МиБ / 20 000 точек. Файлы
+          хранятся в памяти локального сервера.
+        </p>
+      </div>
+      <div class="side-section">
+        <div class="eyebrow">02 / ТРЕБОВАНИЯ</div>
+        <h2>Проверка фильтра</h2>
+        <form id="requirements">
+          <div class="field-label">Полоса пропускания, ГГц</div>
+          <div class="field-pair">
+            <label
+              ><span>От</span
+              ><input
+                name="pass_start_ghz"
+                type="number"
+                step="any"
+                min="0.000001"
+                required /></label
+            ><label
+              ><span>До</span
+              ><input
+                name="pass_end_ghz"
+                type="number"
+                step="any"
+                min="0.000001"
+                required
+            /></label>
+          </div>
+          <label class="field full"
+            ><span>Макс. потери, дБ</span
+            ><input
+              name="max_loss_db"
+              type="number"
+              step="any"
+              min="0"
+              max="100"
+              required
+          /></label>
+          <label class="field full"
+            ><span>Мин. возвратные потери, дБ</span
+            ><input
+              name="min_return_loss_db"
+              type="number"
+              step="any"
+              min="0"
+              max="100"
+              required
+          /></label>
+          <div class="field-label">Подавление ниже полосы, ГГц</div>
+          <div class="field-pair">
+            <label
+              ><span>От</span
+              ><input
+                name="low_stop_start_ghz"
+                type="number"
+                step="any"
+                min="0.000001"
+                required /></label
+            ><label
+              ><span>До</span
+              ><input
+                name="low_stop_end_ghz"
+                type="number"
+                step="any"
+                min="0.000001"
+                required
+            /></label>
+          </div>
+          <div class="field-label">Подавление выше полосы, ГГц</div>
+          <div class="field-pair">
+            <label
+              ><span>От</span
+              ><input
+                name="high_stop_start_ghz"
+                type="number"
+                step="any"
+                min="0.000001"
+                required /></label
+            ><label
+              ><span>До</span
+              ><input
+                name="high_stop_end_ghz"
+                type="number"
+                step="any"
+                min="0.000001"
+                required
+            /></label>
+          </div>
+          <label class="field full"
+            ><span>Мин. подавление, дБ</span
+            ><input
+              name="min_attenuation_db"
+              type="number"
+              step="any"
+              min="0"
+              max="150"
+              required
+          /></label>
+          <button class="apply" type="submit" id="apply">
+            Проверить требования <span>→</span>
+          </button>
+          <p id="dirty-note" class="dirty-note" hidden>
+            Изменения ещё не применены.
+          </p>
+        </form>
+      </div>
+      <div class="sidebar-footer">
+        <span class="status-dot"></span
+        ><span id="connection">Подключение к анализатору…</span>
+      </div>
+    </aside>
+    <main>
+      <header class="page-header">
+        <div>
+          <div class="eyebrow">NETWORK CHARACTERIZATION / TWO-PORT</div>
+          <h1>От измерений<br />к заключению.</h1>
+          <p>Передача, согласование и допуски — в одном окне.</p>
+        </div>
+        <button class="export-button" id="export" disabled>↓ HTML-отчёт</button>
+      </header>
+      <div class="source-notice" id="source-notice">
+        <span class="source-icon">◈</span>
+        <div>
+          <strong>Синтетические данные · модель LC-фильтра</strong
+          ><span
+            >Файлы рассчитаны из электрической цепи. Это не измерения реального
+            прибора.</span
+          >
+        </div>
+        <span class="notice-tag">DEMO LAB</span>
+      </div>
+      <div class="error-box" id="error" role="alert" hidden></div>
+      <section
+        class="comparison-strip"
+        id="comparison"
+        aria-label="Результаты образцов"
+      ></section>
+      <section class="chart-panel">
+        <div class="chart-top">
+          <div>
+            <div class="eyebrow">ЧАСТОТНЫЙ ОТКЛИК</div>
+            <h2 id="chart-title">Передача S21</h2>
+          </div>
+          <div class="plot-legend" id="legend"></div>
+        </div>
+        <div class="chart-tabs" role="group" aria-label="Тип графика">
+          <button data-view="transmission" class="active">Передача S21</button
+          ><button data-view="return">Согласование</button
+          ><button data-view="all">Все S-параметры</button
+          ><button data-view="delay">Групповая задержка</button>
+        </div>
+        <div class="chart-wrap">
+          <svg
+            id="chart"
+            viewBox="0 0 1000 385"
+            role="img"
+            aria-label="График S-параметров"
+          ></svg>
+          <div id="tooltip" class="tooltip" hidden></div>
+        </div>
+        <div class="chart-footer">
+          <span><i class="band-key"></i>Заданная полоса пропускания</span
+          ><span id="plot-note">—</span>
+        </div>
+      </section>
+      <section
+        class="metrics"
+        id="metrics"
+        aria-label="Характеристики выбранного образца"
+      ></section>
+      <section class="results-panel">
+        <div class="section-heading">
+          <div>
+            <div class="eyebrow">ПРОВЕРКА ПО ТОЧКАМ</div>
+            <h2>Соответствие требованиям</h2>
+          </div>
+          <div id="selected-name" class="mono"></div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Требование</th>
+                <th>Допуск</th>
+                <th>Худший результат</th>
+                <th>Запас</th>
+                <th>Статус</th>
+              </tr>
+            </thead>
+            <tbody id="checks"></tbody>
+          </table>
+        </div>
+        <div class="verdict-explanation" id="explanation"></div>
+      </section>
+      <div class="bottom-grid">
+        <section class="method-panel">
+          <div class="eyebrow">КАК ЧИТАТЬ РЕЗУЛЬТАТ</div>
+          <h2>Отрицательный запас = нарушение</h2>
+          <p>
+            Потери — это −S21 в дБ. Возвратные потери проверяются на обоих
+            портах: чем больше, тем лучше согласование. Подавление — ослабление
+            S21 вне рабочей полосы.
+          </p>
+          <p>
+            Проверяются исходные точки и интерполированные границы полос. Между
+            точками узкий дефект может остаться незамеченным. Для каждой полосы
+            нужны полное покрытие и минимум три исходные точки.
+          </p>
+          <p>
+            Полоса −3 дБ отсчитывается от пика S21; групповая задержка — из
+            производной развёрнутой фазы. Ниже −60 дБ задержка скрыта.
+          </p>
+        </section>
+        <section class="evidence-panel">
+          <div class="eyebrow">ДАННЫЕ И ПРОИСХОЖДЕНИЕ</div>
+          <h2>Можно проверить и повторить</h2>
+          <div id="evidence"></div>
+          <div id="warnings"></div>
+        </section>
+      </div>
+      <footer class="page-footer">
+        <span>RF Measurement Analyzer <b>/</b> Local engineering lab</span
+        ><span>Без калибровки и оценки неопределённости</span>
+      </footer>
+    </main>
+  </body>
+</html>

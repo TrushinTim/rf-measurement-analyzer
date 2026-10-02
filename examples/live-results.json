@@ -1,0 +1,157 @@
+{
+  "url": "http://127.0.0.1:8003",
+  "checks": [
+    "nominal PASS",
+    "degraded FAIL",
+    "upload round-trip",
+    "partial INCOMPLETE",
+    "malformed 422",
+    "standalone HTML and full-point CSV"
+  ],
+  "datasets": [
+    {
+      "name": "filter-nominal.s2p",
+      "source": "synthetic",
+      "sha256": "c9c72c27978ce2bffc6351031fdddcd48049bd820bb8a0947e8c111e63f7d305",
+      "verdict": "PASS",
+      "points": 1201,
+      "checks": [
+        {
+          "code": "IL",
+          "label": "Потери в полосе · S21",
+          "start_ghz": 2.4,
+          "end_ghz": 2.5,
+          "limit": 1.0,
+          "sense": "max",
+          "native_points": 101,
+          "status": "PASS",
+          "reason": null,
+          "actual": 0.3779672591532933,
+          "margin_db": 0.6220327408467067,
+          "worst_frequency_ghz": 2.4
+        },
+        {
+          "code": "RL",
+          "label": "Согласование обоих портов · S11 / S22",
+          "start_ghz": 2.4,
+          "end_ghz": 2.5,
+          "limit": 20.0,
+          "sense": "min",
+          "native_points": 101,
+          "status": "PASS",
+          "reason": null,
+          "actual": 30.974432238834773,
+          "margin_db": 10.974432238834773,
+          "worst_frequency_ghz": 2.4
+        },
+        {
+          "code": "STOP-L",
+          "label": "Подавление ниже полосы",
+          "start_ghz": 2.0,
+          "end_ghz": 2.15,
+          "limit": 15.0,
+          "sense": "min",
+          "native_points": 151,
+          "status": "PASS",
+          "reason": null,
+          "actual": 16.600358784752874,
+          "margin_db": 1.6003587847528742,
+          "worst_frequency_ghz": 2.15
+        },
+        {
+          "code": "STOP-H",
+          "label": "Подавление выше полосы",
+          "start_ghz": 2.85,
+          "end_ghz": 3.05,
+          "limit": 15.0,
+          "sense": "min",
+          "native_points": 201,
+          "status": "PASS",
+          "reason": null,
+          "actual": 20.33903648311601,
+          "margin_db": 5.339036483116011,
+          "worst_frequency_ghz": 2.85
+        }
+      ],
+      "peak_frequency_ghz": 2.45,
+      "bandwidth": {
+        "width_mhz": 339.06629755215835,
+        "lower_ghz": 2.286325635661517,
+        "upper_ghz": 2.6253919332136753,
+        "reason": null
+      }
+    },
+    {
+      "name": "filter-degraded.s2p",
+      "source": "synthetic",
+      "sha256": "221ce03b54cf762fe094b45376aef40e4104180ba3f6b460421afc764664d2db",
+      "verdict": "FAIL",
+      "points": 1201,
+      "checks": [
+        {
+          "code": "IL",
+          "label": "Потери в полосе · S21",
+          "start_ghz": 2.4,
+          "end_ghz": 2.5,
+          "limit": 1.0,
+          "sense": "max",
+          "native_points": 101,
+          "status": "FAIL",
+          "reason": null,
+          "actual": 3.6311644914680574,
+          "margin_db": -2.6311644914680574,
+          "worst_frequency_ghz": 2.4
+        },
+        {
+          "code": "RL",
+          "label": "Согласование обоих портов · S11 / S22",
+          "start_ghz": 2.4,
+          "end_ghz": 2.5,
+          "limit": 20.0,
+          "sense": "min",
+          "native_points": 101,
+          "status": "FAIL",
+          "reason": null,
+          "actual": 9.500688639230455,
+          "margin_db": -10.499311360769545,
+          "worst_frequency_ghz": 2.4
+        },
+        {
+          "code": "STOP-L",
+          "label": "Подавление ниже полосы",
+          "start_ghz": 2.0,
+          "end_ghz": 2.15,
+          "limit": 15.0,
+          "sense": "min",
+          "native_points": 151,
+          "status": "PASS",
+          "reason": null,
+          "actual": 23.348847324033294,
+          "margin_db": 8.348847324033294,
+          "worst_frequency_ghz": 2.15
+        },
+        {
+          "code": "STOP-H",
+          "label": "Подавление выше полосы",
+          "start_ghz": 2.85,
+          "end_ghz": 3.05,
+          "limit": 15.0,
+          "sense": "min",
+          "native_points": 201,
+          "status": "FAIL",
+          "reason": null,
+          "actual": 14.48588983932672,
+          "margin_db": -0.5141101606732796,
+          "worst_frequency_ghz": 2.85
+        }
+      ],
+      "peak_frequency_ghz": 2.54,
+      "bandwidth": {
+        "width_mhz": 333.82269016108836,
+        "lower_ghz": 2.378567115967914,
+        "upper_ghz": 2.712389806129002,
+        "reason": null
+      }
+    }
+  ]
+}

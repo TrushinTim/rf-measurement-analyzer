@@ -1,21 +1,29 @@
 import numpy as np
 import pytest
-from app.touchstone import MAX_BYTES, TouchstoneError, parse
+from app.touchstone import MAX_BYTES, MAX_POINTS, TouchstoneError, parse
 
 
 def fixture(fmt="RI", unit="GHZ", reference=50):
-    s = np.array([[.1+.2j, .7-.1j], [.8+.1j, -.2+.05j]])
+    s = np.array([[0.1 + 0.2j, 0.7 - 0.1j], [0.8 + 0.1j, -0.2 + 0.05j]])
     scale = {"HZ": 1e9, "KHZ": 1e6, "MHZ": 1e3, "GHZ": 1}[unit]
     rows = []
     for f in [2.4, 2.45, 2.5]:
         row = [f * scale]
         for i, j in [(0, 0), (1, 0), (0, 1), (1, 1)]:
             value = s[i, j]
-            if fmt == "RI": pair = [value.real, value.imag]
-            else: pair = [abs(value) if fmt == "MA" else 20*np.log10(abs(value)), np.angle(value, deg=True)]
+            if fmt == "RI":
+                pair = [value.real, value.imag]
+            else:
+                pair = [
+                    abs(value) if fmt == "MA" else 20 * np.log10(abs(value)),
+                    np.angle(value, deg=True),
+                ]
             row.extend(pair)
         rows.append(" ".join(map(str, row)))
-    return (f"! independent nonreciprocal example\n# {unit} S {fmt} R {reference}\n" + "\n".join(rows)).encode(), s
+    return (
+        f"! independent nonreciprocal example\n# {unit} S {fmt} R {reference}\n"
+        + "\n".join(rows)
+    ).encode(), s
 
 
 @pytest.mark.parametrize("fmt", ["RI", "MA", "DB"])
@@ -48,15 +56,27 @@ def test_default_options_and_subsequent_header_ignored():
     np.testing.assert_allclose(n.s[0], s)
 
 
-@pytest.mark.parametrize("bad", [
-    b"", b"# GHz S RI R 50\n1 0 0", b"[Version] 2.0\n# GHz S RI R 50",
-    b"# GHz Z RI R 50", b"# GHz S RI R -1", b"# GHz S RI R",
-    b"# GHz S RI R 50 75", b"# GHz S RI RI R 50", b"# nonsense",
-    b"1 0 0 1 0 1 0 0 0", b"# GHz S RI R 50\nNaN 0 0 1 0 1 0 0 0",
-    b"# GHz S RI R 50\n1 inf 0 1 0 1 0 0 0", b"\xff\xfe"
-])
+@pytest.mark.parametrize(
+    "bad",
+    [
+        b"",
+        b"# GHz S RI R 50\n1 0 0",
+        b"[Version] 2.0\n# GHz S RI R 50",
+        b"# GHz Z RI R 50",
+        b"# GHz S RI R -1",
+        b"# GHz S RI R",
+        b"# GHz S RI R 50 75",
+        b"# GHz S RI RI R 50",
+        b"# nonsense",
+        b"1 0 0 1 0 1 0 0 0",
+        b"# GHz S RI R 50\nNaN 0 0 1 0 1 0 0 0",
+        b"# GHz S RI R 50\n1 inf 0 1 0 1 0 0 0",
+        b"\xff\xfe",
+    ],
+)
 def test_malformed_is_rejected(bad):
-    with pytest.raises(TouchstoneError): parse(bad, "bad.s2p")
+    with pytest.raises(TouchstoneError):
+        parse(bad, "bad.s2p")
 
 
 def test_duplicate_or_reversed_frequencies_rejected():
@@ -68,17 +88,38 @@ def test_duplicate_or_reversed_frequencies_rejected():
 
 def test_noise_block_and_oversize_and_wrong_extension():
     raw, _ = fixture()
-    with pytest.raises(TouchstoneError): parse(raw + b"\n1 0.7 0.64 69 0.38", "noise.s2p")
-    with pytest.raises(TouchstoneError): parse(b"!"*(MAX_BYTES+1), "big.s2p")
-    with pytest.raises(TouchstoneError): parse(raw, "bad.s1p")
+    with pytest.raises(TouchstoneError):
+        parse(raw + b"\n1 0.7 0.64 69 0.38", "noise.s2p")
+    with pytest.raises(TouchstoneError):
+        parse(b"!" * (MAX_BYTES + 1), "big.s2p")
+    with pytest.raises(TouchstoneError):
+        parse(raw, "bad.s1p")
 
 
 def test_negative_magnitude_and_db_overflow():
     raw, _ = fixture("MA")
-    lines = raw.decode().splitlines(); fields = lines[2].split(); fields[1] = "-1"
+    lines = raw.decode().splitlines()
+    fields = lines[2].split()
+    fields[1] = "-1"
     lines[2] = " ".join(fields)
-    with pytest.raises(TouchstoneError): parse("\n".join(lines).encode(), "negative.s2p")
+    with pytest.raises(TouchstoneError):
+        parse("\n".join(lines).encode(), "negative.s2p")
     raw, _ = fixture("DB")
-    lines = raw.decode().splitlines(); fields = lines[2].split(); fields[1] = "1e308"
+    lines = raw.decode().splitlines()
+    fields = lines[2].split()
+    fields[1] = "1e308"
     lines[2] = " ".join(fields)
-    with pytest.raises(TouchstoneError): parse("\n".join(lines).encode(), "overflow.s2p")
+    with pytest.raises(TouchstoneError):
+        parse("\n".join(lines).encode(), "overflow.s2p")
+
+
+def test_point_limit_and_extreme_numeric_range():
+    raw = (
+        "# Hz S RI R 50\n"
+        + "\n".join(f"{i+1} 0 0 1 0 1 0 0 0" for i in range(MAX_POINTS + 1))
+    ).encode()
+    with pytest.raises(TouchstoneError, match="частотных точек"):
+        parse(raw, "large.s2p")
+    raw, _ = fixture()
+    with pytest.raises(TouchstoneError):
+        parse(raw.replace(b"2.4", b"1e-308"), "small.s2p")
