@@ -1,0 +1,35 @@
+{
+  "provenance": "synthetic circuit simulation",
+  "model": "third-order Butterworth LC band-pass ladder",
+  "assumptions": "Ideal lumped components, equal 50-ohm ports; no parasitics, calibration or EM model.",
+  "cases": {
+    "nominal": {
+      "file": "filter-nominal.s2p",
+      "components": {
+        "center_hz": 2450000000.0,
+        "fractional_bw": 0.14,
+        "z0_ohm": 50.0,
+        "series_L_H": 2.3200429022142173e-08,
+        "series_C_F": 1.818913635335947e-13,
+        "shunt_L_H": 2.2736420441699335e-10,
+        "shunt_C_F": 1.856034321771374e-11,
+        "series_R_ohm_each": 1.6,
+        "shunt_R_ohm": 2500.0
+      }
+    },
+    "degraded": {
+      "file": "filter-degraded.s2p",
+      "components": {
+        "center_hz": 2540000000.0,
+        "fractional_bw": 0.14,
+        "z0_ohm": 50.0,
+        "series_L_H": 2.2378366576475723e-08,
+        "series_C_F": 1.7544639395956968e-13,
+        "shunt_L_H": 2.1930799244946213e-10,
+        "shunt_C_F": 1.7902693261180577e-11,
+        "series_R_ohm_each": 9.0,
+        "shunt_R_ohm": 650.0
+      }
+    }
+  }
+}
